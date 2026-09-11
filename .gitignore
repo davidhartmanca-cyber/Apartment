@@ -1,1 +1,13 @@
 .worktrees/
+node_modules/
+dist/
+
+# Local Firestore/Auth/Storage emulator data — never commit
+.emulator-data/
+firestore-debug.log
+ui-debug.log
+storage-debug.log
+
+# Firebase Admin service-account key — never commit
+serviceAccountKey.json
+scripts/serviceAccountKey.json
