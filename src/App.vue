@@ -16,6 +16,8 @@
     <HomePage v-if="currentPage === 'home'" />
     <GalleryInfoPage v-else-if="currentPage === 'gallery'" />
     <LoginForm v-else-if="currentPage === 'login'" />
+    <RealtorLibraryPage v-else-if="currentPage === 'realtor-library'" />
+    <AdminLibraryPage v-else-if="currentPage === 'admin-library'" />
     <p v-else>Coming soon.</p>
   </main>
 </template>
@@ -29,6 +31,8 @@ import { resolveRole } from './auth.js'
 import HomePage from './components/HomePage.vue'
 import GalleryInfoPage from './components/GalleryInfoPage.vue'
 import LoginForm from './components/LoginForm.vue'
+import RealtorLibraryPage from './components/RealtorLibraryPage.vue'
+import AdminLibraryPage from './components/AdminLibraryPage.vue'
 
 const currentPage = ref('home')
 const user = ref(null)
