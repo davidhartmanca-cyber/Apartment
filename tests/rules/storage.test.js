@@ -93,4 +93,10 @@ describe('documents/admin storage', () => {
   it('anonymous cannot read', async () => {
     await assertFails(getBytes(ref(ctxStorage(null), 'documents/admin/seed.pdf')))
   })
+  it('admin can write', async () => {
+    await assertSucceeds(uploadBytes(ref(ctxStorage(ADMIN_UID), 'documents/admin/new.pdf'), FILE_BYTES))
+  })
+  it('realtor cannot write', async () => {
+    await assertFails(uploadBytes(ref(ctxStorage(REALTOR_UID), 'documents/admin/new.pdf'), FILE_BYTES))
+  })
 })
