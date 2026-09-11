@@ -18,6 +18,7 @@
     <LoginForm v-else-if="currentPage === 'login'" />
     <RealtorLibraryPage v-else-if="currentPage === 'realtor-library'" />
     <AdminLibraryPage v-else-if="currentPage === 'admin-library'" />
+    <ContentEditorPage v-else-if="currentPage === 'content-editor'" />
     <p v-else>Coming soon.</p>
   </main>
 </template>
@@ -33,6 +34,7 @@ import GalleryInfoPage from './components/GalleryInfoPage.vue'
 import LoginForm from './components/LoginForm.vue'
 import RealtorLibraryPage from './components/RealtorLibraryPage.vue'
 import AdminLibraryPage from './components/AdminLibraryPage.vue'
+import ContentEditorPage from './components/ContentEditorPage.vue'
 
 const currentPage = ref('home')
 const user = ref(null)
