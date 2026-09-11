@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script>
+    var path = window.location.pathname;
+    var base = '/Apartment';
+    var redirectPath = path.replace(base, '') || '/';
+    window.location.replace(base + '/?p=' + encodeURIComponent(redirectPath));
+  </script>
+</head>
+<body></body>
+</html>
