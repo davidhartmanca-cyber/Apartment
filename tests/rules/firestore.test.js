@@ -112,6 +112,9 @@ describe('admins collection', () => {
   it('non-admin cannot write', async () => {
     await assertFails(setDoc(doc(ctxDb(REALTOR_UID), 'admins', 'newAdmin'), {}))
   })
+  it('admin can write', async () => {
+    await assertSucceeds(setDoc(doc(ctxDb(ADMIN_UID), 'admins', 'newAdmin'), {}))
+  })
 })
 
 describe('realtors collection', () => {
@@ -126,5 +129,8 @@ describe('realtors collection', () => {
   })
   it('non-admin cannot write a realtor doc', async () => {
     await assertFails(setDoc(doc(ctxDb(REALTOR_UID), 'realtors', 'newRealtor'), {}))
+  })
+  it('admin can write', async () => {
+    await assertSucceeds(setDoc(doc(ctxDb(ADMIN_UID), 'realtors', 'newRealtor'), { email: 'new@example.com' }))
   })
 })
