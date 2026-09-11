@@ -4,6 +4,7 @@ dist/
 
 # Local Firestore/Auth/Storage emulator data — never commit
 .emulator-data/
+firebase-debug.log
 firestore-debug.log
 ui-debug.log
 storage-debug.log
