@@ -15,7 +15,11 @@ import { db } from '../firebase.js'
 const content = ref(null)
 
 onMounted(async () => {
-  const snap = await getDoc(doc(db, 'content', 'site'))
-  content.value = snap.exists() ? snap.data() : {}
+  try {
+    const snap = await getDoc(doc(db, 'content', 'site'))
+    content.value = snap.exists() ? snap.data() : {}
+  } catch (error) {
+    console.error('Failed to fetch home page content:', error)
+  }
 })
 </script>
