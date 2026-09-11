@@ -43,10 +43,13 @@ onMounted(() => {
       role.value = null
       return
     }
+    const uid = firebaseUser.uid
     const [adminSnap, realtorSnap] = await Promise.all([
-      getDoc(doc(db, 'admins', firebaseUser.uid)),
-      getDoc(doc(db, 'realtors', firebaseUser.uid)),
+      getDoc(doc(db, 'admins', uid)),
+      getDoc(doc(db, 'realtors', uid)),
     ])
+    // Ignore stale response if auth state has changed since this callback started
+    if (auth.currentUser?.uid !== uid) return
     role.value = resolveRole(adminSnap.exists(), realtorSnap.exists())
   })
 })
