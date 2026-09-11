@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isRealtor() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/realtors/$(request.auth.uid));
+    }
+
+    // Public site content: readable by anyone, editable only by admin.
+    match /content/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Public photo gallery metadata: same pattern as content.
+    match /gallery/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Library documents: admin sees everything; a realtor sees only docs
+    // marked visibility=='realtor'. Writes (including creating an
+    // admin-visibility doc) are admin-only.
+    match /documents/{docId} {
+      allow read: if isAdmin() || (isRealtor() && resource.data.visibility == 'realtor');
+      allow write: if isAdmin();
+    }
+
+    // Admins: readable by any signed-in user (needed for isAdmin()-style
+    // checks client-side). Writes are admin-only — the FIRST admin doc must
+    // be created in the Firebase Console, which bypasses rules.
+    match /admins/{uid} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Realtors: a realtor can read their own marker doc (to resolve their
+    // own role); admin can read/write any. No self-write — accounts are
+    // provisioned only via scripts/create-realtor.mjs.
+    match /realtors/{uid} {
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow write: if isAdmin();
+    }
+  }
+}
