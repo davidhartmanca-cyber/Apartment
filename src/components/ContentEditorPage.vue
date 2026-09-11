@@ -102,8 +102,8 @@ async function addPhoto() {
 }
 
 async function deletePhoto(photo) {
-  await deleteObject(storageRef(storage, photo.storagePath))
   await deleteDoc(doc(db, 'gallery', photo.id))
+  await deleteObject(storageRef(storage, photo.storagePath))
   await loadPhotos()
 }
 
