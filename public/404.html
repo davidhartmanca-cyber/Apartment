@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <script>
+    // `base` below must match vite.config.js's `base` (minus the trailing
+    // slash). If the repo is renamed, update both files together.
     var path = window.location.pathname;
     var base = '/Apartment';
     var redirectPath = path.replace(base, '') || '/';
