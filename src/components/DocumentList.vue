@@ -20,7 +20,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { getDownloadURL, ref as storageRef } from 'firebase/storage'
+import { getBlob, ref as storageRef } from 'firebase/storage'
 import { storage } from '../firebase.js'
 import { filterByCategory } from '../documentAccess.js'
 
@@ -32,7 +32,16 @@ const category = ref('all')
 const filtered = computed(() => filterByCategory(props.documents, category.value))
 
 async function download(docItem) {
-  const url = await getDownloadURL(storageRef(storage, docItem.storagePath))
-  window.open(url, '_blank')
+  try {
+    const blob = await getBlob(storageRef(storage, docItem.storagePath))
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = docItem.title || 'document'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Download failed:', error)
+  }
 }
 </script>
