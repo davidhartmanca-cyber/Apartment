@@ -29,6 +29,7 @@ async function handleSubmit() {
   try {
     await signInWithEmailAndPassword(auth, email.value, password.value)
   } catch (err) {
+    console.error(err)
     error.value = 'Invalid email or password.'
   } finally {
     submitting.value = false
