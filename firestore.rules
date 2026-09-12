@@ -27,6 +27,15 @@ service cloud.firestore {
     // Library documents: admin sees everything; a realtor sees only docs
     // marked visibility=='realtor'. Writes (including creating an
     // admin-visibility doc) are admin-only.
+    //
+    // IMPORTANT for list/collection queries (getDocs(query(...))): Firestore
+    // evaluates the rule against every document a query COULD return, not
+    // just the ones it does return — it denies the whole query up front if
+    // it cannot prove every possible match satisfies the rule, rather than
+    // filtering out disallowed documents. A realtor-facing query against
+    // this collection MUST therefore include a matching
+    // where('visibility', '==', 'realtor') clause, or the entire query will
+    // be denied. See tests/rules/firestore.test.js for coverage of this.
     match /documents/{docId} {
       allow read: if isAdmin() || (isRealtor() && resource.data.visibility == 'realtor');
       allow write: if isAdmin();

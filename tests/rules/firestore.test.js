@@ -4,7 +4,7 @@ import {
   assertFails,
   assertSucceeds,
 } from '@firebase/rules-unit-testing'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore'
 import { beforeAll, afterAll, beforeEach, describe, it } from 'vitest'
 
 let testEnv
@@ -12,6 +12,7 @@ let testEnv
 const ADMIN_UID = 'adminUid'
 const REALTOR_UID = 'realtorUid'
 const OTHER_UID = 'otherUid'
+const NO_ROLE_UID = 'noRoleUid'
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
@@ -99,6 +100,26 @@ describe('documents', () => {
     await assertSucceeds(setDoc(doc(ctxDb(ADMIN_UID), 'documents', 'newDoc'), {
       title: 'New', category: 'lease', visibility: 'admin',
     }))
+  })
+  it('realtor can run the scoped realtor-visibility query', async () => {
+    await assertSucceeds(getDocs(query(
+      collection(ctxDb(REALTOR_UID), 'documents'), where('visibility', '==', 'realtor'))))
+  })
+  it('realtor cannot list documents unscoped', async () => {
+    await assertFails(getDocs(collection(ctxDb(REALTOR_UID), 'documents')))
+  })
+  it('realtor cannot run the admin-visibility query', async () => {
+    await assertFails(getDocs(query(
+      collection(ctxDb(REALTOR_UID), 'documents'), where('visibility', '==', 'admin'))))
+  })
+  it('admin can list documents unscoped', async () => {
+    await assertSucceeds(getDocs(collection(ctxDb(ADMIN_UID), 'documents')))
+  })
+  it('a user with no marker doc cannot read any document', async () => {
+    await assertFails(getDoc(doc(ctxDb(NO_ROLE_UID), 'documents', 'realtorDoc')))
+  })
+  it('a user with no marker doc cannot read another user\'s realtor doc', async () => {
+    await assertFails(getDoc(doc(ctxDb(NO_ROLE_UID), 'realtors', REALTOR_UID)))
   })
 })
 
