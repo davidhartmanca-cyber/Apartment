@@ -13,6 +13,7 @@
   </header>
 
   <main>
+    <p v-if="roleMessage">{{ roleMessage }}</p>
     <HomePage v-if="currentPage === 'home'" />
     <GalleryInfoPage v-else-if="currentPage === 'gallery'" />
     <LoginForm v-else-if="currentPage === 'login'" />
@@ -41,6 +42,7 @@ import DocumentManagerPage from './components/DocumentManagerPage.vue'
 const currentPage = ref('home')
 const user = ref(null)
 const role = ref(null)
+const roleMessage = ref('')
 
 let unsubscribe = null
 
@@ -49,6 +51,7 @@ onMounted(() => {
     user.value = firebaseUser
     if (!firebaseUser) {
       role.value = null
+      roleMessage.value = ''
       return
     }
     const uid = firebaseUser.uid
@@ -58,7 +61,18 @@ onMounted(() => {
     ])
     // Ignore stale response if auth state has changed since this callback started
     if (auth.currentUser?.uid !== uid) return
-    role.value = resolveRole(adminSnap.exists(), realtorSnap.exists())
+    const resolvedRole = resolveRole(adminSnap.exists(), realtorSnap.exists())
+    role.value = resolvedRole
+    // A signed-in user with no admin/realtor marker doc (revoked realtor, or
+    // an admin account created in the Console before its marker doc exists)
+    // would otherwise be stuck on the login page with no explanation, since
+    // `role` may already have been `null` before this resolution and a plain
+    // `watch(role, ...)` below would not fire for a null-to-null "change".
+    // Handle it here, where we know a fresh resolution just happened.
+    if (!resolvedRole && currentPage.value === 'login') {
+      roleMessage.value = 'Your account is not yet assigned a role. Contact an administrator for access.'
+      currentPage.value = 'home'
+    }
   })
 })
 
@@ -69,6 +83,7 @@ onUnmounted(() => {
 // Once login resolves a role, leave the login page automatically.
 watch(role, (newRole) => {
   if (currentPage.value === 'login' && newRole) {
+    roleMessage.value = ''
     currentPage.value = newRole === 'admin' ? 'admin-library' : 'realtor-library'
   }
 })
@@ -76,5 +91,6 @@ watch(role, (newRole) => {
 async function handleLogout() {
   await signOut(auth)
   currentPage.value = 'home'
+  roleMessage.value = ''
 }
 </script>
