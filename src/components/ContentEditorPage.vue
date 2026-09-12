@@ -1,6 +1,7 @@
 <template>
   <section>
     <h2>Edit Site Content</h2>
+    <p v-if="errorMessage">{{ errorMessage }}</p>
     <form @submit.prevent="save">
       <label>Hero Title <input v-model="form.heroTitle" /></label>
       <label>Hero Subtitle <input v-model="form.heroSubtitle" /></label>
@@ -20,9 +21,9 @@
     <ul>
       <li v-for="(photo, index) in photos" :key="photo.id">
         {{ photo.caption }}
-        <button type="button" @click="moveUp(index)" :disabled="index === 0">Up</button>
-        <button type="button" @click="moveDown(index)" :disabled="index === photos.length - 1">Down</button>
-        <button type="button" @click="deletePhoto(photo)">Delete</button>
+        <button type="button" @click="moveUp(index)" :disabled="index === 0 || photoBusy">Up</button>
+        <button type="button" @click="moveDown(index)" :disabled="index === photos.length - 1 || photoBusy">Down</button>
+        <button type="button" @click="deletePhoto(photo)" :disabled="photoBusy">Delete</button>
       </li>
     </ul>
     <form @submit.prevent="addPhoto">
@@ -50,11 +51,26 @@ const form = reactive({
 const amenitiesText = ref('')
 const saving = ref(false)
 const saved = ref(false)
+const errorMessage = ref('')
 
 const photos = ref([])
 const newFile = ref(null)
 const newCaption = ref('')
 const uploading = ref(false)
+const photoBusy = ref(false)
+
+async function withBusy(busyRef, fn) {
+  busyRef.value = true
+  errorMessage.value = ''
+  try {
+    await fn()
+  } catch (error) {
+    console.error(error)
+    errorMessage.value = 'Something went wrong. Please try again.'
+  } finally {
+    busyRef.value = false
+  }
+}
 
 onMounted(async () => {
   try {
@@ -76,12 +92,12 @@ async function loadPhotos() {
 }
 
 async function save() {
-  saving.value = true
-  saved.value = false
-  const amenities = amenitiesText.value.split('\n').map((s) => s.trim()).filter(Boolean)
-  await setDoc(doc(db, 'content', 'site'), { ...form, amenities }, { merge: true })
-  saving.value = false
-  saved.value = true
+  await withBusy(saving, async () => {
+    saved.value = false
+    const amenities = amenitiesText.value.split('\n').map((s) => s.trim()).filter(Boolean)
+    await setDoc(doc(db, 'content', 'site'), { ...form, amenities }, { merge: true })
+    saved.value = true
+  })
 }
 
 function onFileChange(event) {
@@ -90,21 +106,23 @@ function onFileChange(event) {
 
 async function addPhoto() {
   if (!newFile.value) return
-  uploading.value = true
-  const path = `gallery/${Date.now()}-${newFile.value.name}`
-  await uploadBytes(storageRef(storage, path), newFile.value)
-  const order = photos.value.length ? Math.max(...photos.value.map((p) => p.order)) + 1 : 1
-  await addDoc(collection(db, 'gallery'), { storagePath: path, caption: newCaption.value, order })
-  newFile.value = null
-  newCaption.value = ''
-  uploading.value = false
-  await loadPhotos()
+  await withBusy(uploading, async () => {
+    const path = `gallery/${Date.now()}-${newFile.value.name}`
+    await uploadBytes(storageRef(storage, path), newFile.value)
+    const order = photos.value.length ? Math.max(...photos.value.map((p) => p.order)) + 1 : 1
+    await addDoc(collection(db, 'gallery'), { storagePath: path, caption: newCaption.value, order })
+    newFile.value = null
+    newCaption.value = ''
+    await loadPhotos()
+  })
 }
 
 async function deletePhoto(photo) {
-  await deleteDoc(doc(db, 'gallery', photo.id))
-  await deleteObject(storageRef(storage, photo.storagePath))
-  await loadPhotos()
+  await withBusy(photoBusy, async () => {
+    await deleteDoc(doc(db, 'gallery', photo.id))
+    await deleteObject(storageRef(storage, photo.storagePath))
+    await loadPhotos()
+  })
 }
 
 async function moveUp(index) {
@@ -118,10 +136,12 @@ async function moveDown(index) {
 }
 
 async function swapOrder(i, j) {
-  const a = photos.value[i]
-  const b = photos.value[j]
-  await updateDoc(doc(db, 'gallery', a.id), { order: b.order })
-  await updateDoc(doc(db, 'gallery', b.id), { order: a.order })
-  await loadPhotos()
+  await withBusy(photoBusy, async () => {
+    const a = photos.value[i]
+    const b = photos.value[j]
+    await updateDoc(doc(db, 'gallery', a.id), { order: b.order })
+    await updateDoc(doc(db, 'gallery', b.id), { order: a.order })
+    await loadPhotos()
+  })
 }
 </script>

@@ -1,6 +1,7 @@
 <template>
   <section>
     <h2>Manage Documents</h2>
+    <p v-if="errorMessage">{{ errorMessage }}</p>
     <form @submit.prevent="upload">
       <input v-model="title" placeholder="Title" required />
       <select v-model="category" required>
@@ -19,7 +20,7 @@
     <ul>
       <li v-for="docItem in documents" :key="docItem.id">
         {{ docItem.title }} ({{ docItem.category }}, {{ docItem.visibility }})
-        <button type="button" @click="remove(docItem)">Delete</button>
+        <button type="button" @click="remove(docItem)" :disabled="removing">Delete</button>
       </li>
     </ul>
   </section>
@@ -36,7 +37,22 @@ const category = ref('floorplan')
 const visibility = ref('realtor')
 const file = ref(null)
 const uploading = ref(false)
+const removing = ref(false)
 const documents = ref([])
+const errorMessage = ref('')
+
+async function withBusy(busyRef, fn) {
+  busyRef.value = true
+  errorMessage.value = ''
+  try {
+    await fn()
+  } catch (error) {
+    console.error(error)
+    errorMessage.value = 'Something went wrong. Please try again.'
+  } finally {
+    busyRef.value = false
+  }
+}
 
 onMounted(async () => {
   try {
@@ -57,26 +73,28 @@ function onFileChange(event) {
 
 async function upload() {
   if (!file.value) return
-  uploading.value = true
-  const path = `documents/${visibility.value}/${Date.now()}-${file.value.name}`
-  await uploadBytes(storageRef(storage, path), file.value)
-  await addDoc(collection(db, 'documents'), {
-    title: title.value,
-    category: category.value,
-    visibility: visibility.value,
-    storagePath: path,
-    uploadedAt: serverTimestamp(),
-    uploadedBy: auth.currentUser?.uid ?? null,
+  await withBusy(uploading, async () => {
+    const path = `documents/${visibility.value}/${Date.now()}-${file.value.name}`
+    await uploadBytes(storageRef(storage, path), file.value)
+    await addDoc(collection(db, 'documents'), {
+      title: title.value,
+      category: category.value,
+      visibility: visibility.value,
+      storagePath: path,
+      uploadedAt: serverTimestamp(),
+      uploadedBy: auth.currentUser?.uid ?? null,
+    })
+    title.value = ''
+    file.value = null
+    await loadDocuments()
   })
-  title.value = ''
-  file.value = null
-  uploading.value = false
-  await loadDocuments()
 }
 
 async function remove(docItem) {
-  await deleteDoc(doc(db, 'documents', docItem.id))
-  await deleteObject(storageRef(storage, docItem.storagePath))
-  await loadDocuments()
+  await withBusy(removing, async () => {
+    await deleteDoc(doc(db, 'documents', docItem.id))
+    await deleteObject(storageRef(storage, docItem.storagePath))
+    await loadDocuments()
+  })
 }
 </script>
