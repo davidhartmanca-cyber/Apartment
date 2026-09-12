@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label>
+    <label class="category-filter">
       Category
       <select v-model="category">
         <option value="all">All</option>
@@ -9,10 +9,11 @@
         <option value="lease">Lease / Legal</option>
       </select>
     </label>
-    <ul>
-      <li v-for="docItem in filtered" :key="docItem.id">
-        <a href="#" @click.prevent="download(docItem)">{{ docItem.title }}</a>
-        <span class="category-tag">{{ docItem.category }}</span>
+    <p v-if="!filtered.length" class="muted">No documents yet.</p>
+    <ul v-else class="list-plain doc-list">
+      <li v-for="docItem in filtered" :key="docItem.id" class="card doc-row">
+        <a href="#" class="doc-title" @click.prevent="download(docItem)">{{ docItem.title }}</a>
+        <span class="badge">{{ docItem.category }}</span>
       </li>
     </ul>
   </div>
@@ -45,3 +46,33 @@ async function download(docItem) {
   }
 }
 </script>
+
+<style scoped>
+.category-filter {
+  max-width: 260px;
+  margin-bottom: 1.25rem;
+}
+
+.doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.doc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+}
+
+.doc-title {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.doc-title:hover {
+  text-decoration: underline;
+}
+</style>

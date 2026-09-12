@@ -1,8 +1,8 @@
 <template>
-  <section>
-    <h2>Manage Documents</h2>
-    <p v-if="errorMessage">{{ errorMessage }}</p>
-    <form @submit.prevent="upload">
+  <section class="page">
+    <h2 class="section-title">Manage Documents</h2>
+    <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+    <form class="card form-block upload-form" @submit.prevent="upload">
       <input v-model="title" placeholder="Title" required />
       <select v-model="category" required>
         <option value="floorplan">Floor Plan</option>
@@ -14,13 +14,16 @@
         <option value="admin">Admin Library</option>
       </select>
       <input type="file" @change="onFileChange" required />
-      <button type="submit" :disabled="uploading">Upload</button>
+      <button type="submit" class="btn btn-primary" :disabled="uploading">Upload</button>
     </form>
 
-    <ul>
-      <li v-for="docItem in documents" :key="docItem.id">
-        {{ docItem.title }} ({{ docItem.category }}, {{ docItem.visibility }})
-        <button type="button" @click="remove(docItem)" :disabled="removing">Delete</button>
+    <ul class="list-plain doc-manage-list">
+      <li v-for="docItem in documents" :key="docItem.id" class="card doc-manage-row">
+        <span>
+          <strong>{{ docItem.title }}</strong>
+          <span class="muted"> ({{ docItem.category }}, {{ docItem.visibility }})</span>
+        </span>
+        <button type="button" class="btn btn-outline btn-small" @click="remove(docItem)" :disabled="removing">Delete</button>
       </li>
     </ul>
   </section>
@@ -98,3 +101,27 @@ async function remove(docItem) {
   })
 }
 </script>
+
+<style scoped>
+.upload-form {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
+}
+
+.doc-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.doc-manage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem;
+  gap: 1rem;
+}
+</style>

@@ -1,6 +1,6 @@
 <template>
-  <section>
-    <h2>Document Library</h2>
+  <section class="page">
+    <h2 class="section-title">Document Library</h2>
     <DocumentList :documents="documents" />
   </section>
 </template>

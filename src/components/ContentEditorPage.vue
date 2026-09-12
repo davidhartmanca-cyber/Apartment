@@ -1,8 +1,8 @@
 <template>
-  <section>
-    <h2>Edit Site Content</h2>
-    <p v-if="errorMessage">{{ errorMessage }}</p>
-    <form @submit.prevent="save">
+  <section class="page">
+    <h2 class="section-title">Edit Site Content</h2>
+    <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+    <form class="card form-block" @submit.prevent="save">
       <label>Hero Title <input v-model="form.heroTitle" /></label>
       <label>Hero Subtitle <input v-model="form.heroSubtitle" /></label>
       <label>Description <textarea v-model="form.description"></textarea></label>
@@ -13,23 +13,25 @@
       <label>Contact Phone <input v-model="form.contactInfo.phone" /></label>
       <label>Contact Email <input v-model="form.contactInfo.email" /></label>
       <label>Contact Address <input v-model="form.contactInfo.address" /></label>
-      <button type="submit" :disabled="saving">Save</button>
-      <p v-if="saved">Saved.</p>
+      <button type="submit" class="btn btn-primary" :disabled="saving">Save</button>
+      <p v-if="saved" class="success-text">Saved.</p>
     </form>
 
-    <h2>Gallery</h2>
-    <ul>
-      <li v-for="(photo, index) in photos" :key="photo.id">
-        {{ photo.caption }}
-        <button type="button" @click="moveUp(index)" :disabled="index === 0 || photoBusy">Up</button>
-        <button type="button" @click="moveDown(index)" :disabled="index === photos.length - 1 || photoBusy">Down</button>
-        <button type="button" @click="deletePhoto(photo)" :disabled="photoBusy">Delete</button>
+    <h2 class="section-title gallery-title">Gallery</h2>
+    <ul class="list-plain photo-list">
+      <li v-for="(photo, index) in photos" :key="photo.id" class="card photo-row">
+        <span class="photo-caption">{{ photo.caption }}</span>
+        <span class="photo-actions">
+          <button type="button" class="btn btn-outline btn-small" @click="moveUp(index)" :disabled="index === 0 || photoBusy">Up</button>
+          <button type="button" class="btn btn-outline btn-small" @click="moveDown(index)" :disabled="index === photos.length - 1 || photoBusy">Down</button>
+          <button type="button" class="btn btn-outline btn-small" @click="deletePhoto(photo)" :disabled="photoBusy">Delete</button>
+        </span>
       </li>
     </ul>
-    <form @submit.prevent="addPhoto">
+    <form class="card form-block add-photo-form" @submit.prevent="addPhoto">
       <input type="file" accept="image/*" @change="onFileChange" required />
       <input v-model="newCaption" placeholder="Caption" />
-      <button type="submit" :disabled="uploading">Add Photo</button>
+      <button type="submit" class="btn btn-primary" :disabled="uploading">Add Photo</button>
     </form>
   </section>
 </template>
@@ -145,3 +147,51 @@ async function swapOrder(i, j) {
   })
 }
 </script>
+
+<style scoped>
+.form-block {
+  max-width: 480px;
+  margin-bottom: 2rem;
+}
+
+.form-block button {
+  margin-top: 0.25rem;
+}
+
+.gallery-title {
+  margin-top: 1rem;
+}
+
+.photo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  max-width: 560px;
+}
+
+.photo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.1rem;
+  gap: 1rem;
+}
+
+.photo-caption {
+  color: var(--color-text);
+}
+
+.photo-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.add-photo-form {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+</style>

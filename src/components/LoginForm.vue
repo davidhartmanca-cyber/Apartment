@@ -1,16 +1,19 @@
 <template>
-  <form @submit.prevent="handleSubmit">
-    <label>
-      Email
-      <input v-model="email" type="email" required />
-    </label>
-    <label>
-      Password
-      <input v-model="password" type="password" required />
-    </label>
-    <button type="submit" :disabled="submitting">Log in</button>
-    <p v-if="error">{{ error }}</p>
-  </form>
+  <div class="page login-page">
+    <form class="card login-card" @submit.prevent="handleSubmit">
+      <h2>Log in</h2>
+      <label>
+        Email
+        <input v-model="email" type="email" required />
+      </label>
+      <label>
+        Password
+        <input v-model="password" type="password" required />
+      </label>
+      <button type="submit" class="btn btn-primary" :disabled="submitting">Log in</button>
+      <p v-if="error" class="error-text">{{ error }}</p>
+    </form>
+  </div>
 </template>
 
 <script setup>
@@ -36,3 +39,25 @@ async function handleSubmit() {
   }
 }
 </script>
+
+<style scoped>
+.login-page {
+  display: flex;
+  justify-content: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+}
+
+.login-card h2 {
+  margin-bottom: 1.25rem;
+}
+
+.login-card button {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+</style>

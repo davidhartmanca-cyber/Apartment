@@ -13,7 +13,7 @@
   </header>
 
   <main>
-    <p v-if="roleMessage">{{ roleMessage }}</p>
+    <p v-if="roleMessage" class="page role-message">{{ roleMessage }}</p>
     <HomePage v-if="currentPage === 'home'" />
     <GalleryInfoPage v-else-if="currentPage === 'gallery'" />
     <LoginForm v-else-if="currentPage === 'login'" />
@@ -94,3 +94,45 @@ async function handleLogout() {
   roleMessage.value = ''
 }
 </script>
+
+<style scoped>
+header {
+  background: var(--color-primary);
+}
+
+nav {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.85rem 1.5rem;
+  flex-wrap: wrap;
+}
+
+nav a {
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+nav a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+nav a.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.role-message {
+  padding-top: 1.5rem;
+  padding-bottom: 0;
+  color: var(--color-text-light);
+}
+</style>
