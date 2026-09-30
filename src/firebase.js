@@ -3,17 +3,17 @@ import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
 import { getAuth, connectAuthEmulator } from 'firebase/auth'
 import { getStorage, connectStorageEmulator } from 'firebase/storage'
 
-// Placeholder config for local development against emulators only. Before
-// deploying to production, replace this with the real web app config from
-// Firebase Console -> Project Settings -> General -> Your apps, and add the
-// deployed domain under Authentication -> Settings -> Authorized domains.
+// Web app config for Firebase project `apartment-site-dh`. These values are
+// public identifiers, not secrets — access is enforced by firestore.rules and
+// storage.rules. The deployed domain must be listed under Authentication ->
+// Settings -> Authorized domains.
 const firebaseConfig = {
-  apiKey: 'placeholder-api-key',
-  authDomain: 'apartment-site.firebaseapp.com',
-  projectId: 'apartment-site',
-  storageBucket: 'apartment-site.firebasestorage.app',
-  messagingSenderId: '000000000000',
-  appId: '1:000000000000:web:0000000000000000000000',
+  apiKey: 'AIzaSyBD8s48E5R_iOV4DqfQbv4nwr0qaUBsEdo',
+  authDomain: 'apartment-site-dh.firebaseapp.com',
+  projectId: 'apartment-site-dh',
+  storageBucket: 'apartment-site-dh.firebasestorage.app',
+  messagingSenderId: '282981667768',
+  appId: '1:282981667768:web:d54e1196ab0fc798b6f54d',
 }
 
 const app = initializeApp(firebaseConfig)
