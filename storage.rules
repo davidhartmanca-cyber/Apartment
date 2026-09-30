@@ -2,6 +2,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // These firestore.exists() checks are cross-service rules: the Storage
+    // service agent needs roles/firebaserules.firestoreServiceAgent or every
+    // check fails and all writes are denied. `firebase deploy` only grants it
+    // when run interactively (no TTY or an AI-agent shell counts as
+    // non-interactive; `--interactive --force` overrides), and only when these
+    // rules have changed since the last deploy.
     function isAdmin() {
       return request.auth != null &&
         firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
