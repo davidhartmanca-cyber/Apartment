@@ -25,7 +25,7 @@
 ## After deploying
 
 1. Add the GitHub Pages domain to Firebase: Authentication -> Settings -> Authorized domains -> Add domain -> `<username>.github.io`.
-2. Configure CORS on the production Storage bucket so document downloads (which use `getBlob()`) work — they succeed against the local emulator with no CORS setup, but silently fail in production without it: `gsutil cors set cors.json gs://<your-bucket>`. See https://cloud.google.com/storage/docs/using-cors for the CORS JSON format.
+2. Configure CORS on the production Storage bucket so document downloads (which use `getBlob()`) work — they succeed against the local emulator with no CORS setup, but silently fail in production without it: `gcloud storage buckets update gs://apartment-site-dh.firebasestorage.app --cors-file=cors.json` (the repo's `cors.json` allows GET from the GitHub Pages origin). See https://cloud.google.com/storage/docs/using-cors for the CORS JSON format.
 3. Seed initial content: log in as admin -> Edit Content -> fill in the fields -> Save. This creates the `content/site` doc (via `setDoc(..., {merge:true})`); until it exists, the Home and Gallery pages render blank with no explanation.
 
 ## Adding a realtor
