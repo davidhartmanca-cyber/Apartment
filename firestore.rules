@@ -7,9 +7,13 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    // A revoked realtor keeps their marker doc with active == false (the
+    // client SDK cannot delete their Auth account), so check the flag too.
+    // Docs without the field predate revocation and count as active.
     function isRealtor() {
       return request.auth != null &&
-        exists(/databases/$(database)/documents/realtors/$(request.auth.uid));
+        exists(/databases/$(database)/documents/realtors/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/realtors/$(request.auth.uid)).data.get('active', true) == true;
     }
 
     // Public site content: readable by anyone, editable only by admin.
@@ -50,11 +54,31 @@ service cloud.firestore {
     }
 
     // Realtors: a realtor can read their own marker doc (to resolve their
-    // own role); admin can read/write any. No self-write — accounts are
-    // provisioned only via scripts/create-realtor.mjs.
+    // own role); admin can read/write any. No self-write: accounts are
+    // provisioned by an admin on the Realtor Access page (or via
+    // scripts/create-realtor.mjs).
     match /realtors/{uid} {
       allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
       allow write: if isAdmin();
+    }
+
+    // Realtor access requests from the public Realtors tab. Keyed by the
+    // (lowercased) email so repeat requests don't pile up: a second create for
+    // the same email is an update, which is denied. Only the exact shape the
+    // form sends is accepted; admin reads them and deletes on grant/decline.
+    // Size limits must match src/realtorAccess.js.
+    match /accessRequests/{email} {
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'requestedAt']) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 100 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() <= 254 &&
+        request.resource.data.email == email &&
+        request.resource.data.email == email.lower() &&
+        request.resource.data.email.matches('^[^@ ]+@[^@ ]+[.][^@ ]+$') &&
+        request.resource.data.requestedAt == request.time;
+      allow read, delete: if isAdmin();
     }
   }
 }

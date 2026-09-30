@@ -4,6 +4,7 @@
     <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
     <form class="card form-block upload-form" @submit.prevent="upload">
       <input v-model="title" placeholder="Title" required />
+      <textarea v-model="description" placeholder="Description (optional)" maxlength="500"></textarea>
       <select v-model="category" required>
         <option value="floorplan">Floor Plan</option>
         <option value="pricing">Pricing / Availability</option>
@@ -19,11 +20,17 @@
 
     <ul class="list-plain doc-manage-list">
       <li v-for="docItem in documents" :key="docItem.id" class="card doc-manage-row">
-        <span>
-          <strong>{{ docItem.title }}</strong>
-          <span class="muted"> ({{ docItem.category }}, {{ docItem.visibility }})</span>
-        </span>
-        <button type="button" class="btn btn-outline btn-small" @click="remove(docItem)" :disabled="removing">Delete</button>
+        <div class="doc-manage-head">
+          <span>
+            <strong>{{ docItem.title }}</strong>
+            <span class="muted"> ({{ docItem.category }}, {{ docItem.visibility }})</span>
+          </span>
+          <button type="button" class="btn btn-outline btn-small" @click="remove(docItem)" :disabled="removing">Delete</button>
+        </div>
+        <form class="description-edit" @submit.prevent="saveDescription(docItem)">
+          <textarea v-model="docItem.draftDescription" placeholder="Description (optional)" maxlength="500" :aria-label="`Description for ${docItem.title}`"></textarea>
+          <button type="submit" class="btn btn-outline btn-small" :disabled="savingDescription || docItem.draftDescription === (docItem.description ?? '')">Save description</button>
+        </form>
       </li>
     </ul>
   </section>
@@ -31,16 +38,18 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { collection, getDocs, addDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, deleteObject } from 'firebase/storage'
 import { db, storage, auth } from '../firebase.js'
 
 const title = ref('')
+const description = ref('')
 const category = ref('floorplan')
 const visibility = ref('realtor')
 const file = ref(null)
 const uploading = ref(false)
 const removing = ref(false)
+const savingDescription = ref(false)
 const documents = ref([])
 const errorMessage = ref('')
 
@@ -67,7 +76,10 @@ onMounted(async () => {
 
 async function loadDocuments() {
   const snap = await getDocs(collection(db, 'documents'))
-  documents.value = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  documents.value = snap.docs.map((d) => {
+    const data = d.data()
+    return { id: d.id, ...data, draftDescription: data.description ?? '' }
+  })
 }
 
 function onFileChange(event) {
@@ -81,6 +93,7 @@ async function upload() {
     await uploadBytes(storageRef(storage, path), file.value)
     await addDoc(collection(db, 'documents'), {
       title: title.value,
+      description: description.value.trim(),
       category: category.value,
       visibility: visibility.value,
       storagePath: path,
@@ -88,7 +101,15 @@ async function upload() {
       uploadedBy: auth.currentUser?.uid ?? null,
     })
     title.value = ''
+    description.value = ''
     file.value = null
+    await loadDocuments()
+  })
+}
+
+async function saveDescription(docItem) {
+  await withBusy(savingDescription, async () => {
+    await updateDoc(doc(db, 'documents', docItem.id), { description: docItem.draftDescription.trim() })
     await loadDocuments()
   })
 }
@@ -117,11 +138,32 @@ async function remove(docItem) {
   gap: 0.6rem;
 }
 
+.doc-manage-list {
+  max-width: 720px;
+}
+
 .doc-manage-row {
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 1.2rem;
+  gap: 0.6rem;
+}
+
+.doc-manage-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.9rem 1.2rem;
   gap: 1rem;
+}
+
+.description-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.description-edit textarea {
+  min-height: 3.5rem;
 }
 </style>

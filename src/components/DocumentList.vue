@@ -12,7 +12,10 @@
     <p v-if="!filtered.length" class="muted">No documents yet.</p>
     <ul v-else class="list-plain doc-list">
       <li v-for="docItem in filtered" :key="docItem.id" class="card doc-row">
-        <a href="#" class="doc-title" @click.prevent="download(docItem)">{{ docItem.title }}</a>
+        <div class="doc-text">
+          <a href="#" class="doc-title" @click.prevent="download(docItem)">{{ docItem.title }}</a>
+          <p v-if="docItem.description" class="doc-description">{{ docItem.description }}</p>
+        </div>
         <span class="badge">{{ docItem.category }}</span>
       </li>
     </ul>
@@ -63,7 +66,15 @@ async function download(docItem) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding: 1rem 1.25rem;
+}
+
+.doc-description {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+  white-space: pre-line;
 }
 
 .doc-title {

@@ -20,7 +20,10 @@
     <h2 class="section-title gallery-title">Gallery</h2>
     <ul class="list-plain photo-list">
       <li v-for="(photo, index) in photos" :key="photo.id" class="card photo-row">
-        <span class="photo-caption">{{ photo.caption }}</span>
+        <form class="caption-edit" @submit.prevent="saveCaption(photo)">
+          <input v-model="photo.draftCaption" placeholder="Caption" :aria-label="`Caption for photo ${index + 1}`" />
+          <button type="submit" class="btn btn-outline btn-small" :disabled="photoBusy || photo.draftCaption === (photo.caption ?? '')">Save</button>
+        </form>
         <span class="photo-actions">
           <button type="button" class="btn btn-outline btn-small" @click="moveUp(index)" :disabled="index === 0 || photoBusy">Up</button>
           <button type="button" class="btn btn-outline btn-small" @click="moveDown(index)" :disabled="index === photos.length - 1 || photoBusy">Down</button>
@@ -99,7 +102,10 @@ onMounted(async () => {
 
 async function loadPhotos() {
   const snap = await getDocs(query(collection(db, 'gallery'), orderBy('order')))
-  photos.value = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  photos.value = snap.docs.map((d) => {
+    const data = d.data()
+    return { id: d.id, ...data, draftCaption: data.caption ?? '' }
+  })
 }
 
 async function save() {
@@ -153,6 +159,14 @@ async function addStarterPhotos() {
   })
 }
 
+async function saveCaption(photo) {
+  await withBusy(photoBusy, async () => {
+    const caption = photo.draftCaption.trim()
+    await updateDoc(doc(db, 'gallery', photo.id), { caption })
+    await loadPhotos()
+  })
+}
+
 async function deletePhoto(photo) {
   await withBusy(photoBusy, async () => {
     await deleteDoc(doc(db, 'gallery', photo.id))
@@ -201,19 +215,28 @@ async function swapOrder(i, j) {
   flex-direction: column;
   gap: 0.6rem;
   margin-bottom: 1.5rem;
-  max-width: 560px;
+  max-width: 720px;
 }
 
 .photo-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   padding: 0.8rem 1.1rem;
   gap: 1rem;
 }
 
-.photo-caption {
-  color: var(--color-text);
+.caption-edit {
+  display: flex;
+  gap: 0.4rem;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.caption-edit input {
+  flex: 1;
+  min-width: 0;
 }
 
 .photo-actions {

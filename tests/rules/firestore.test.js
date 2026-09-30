@@ -4,7 +4,7 @@ import {
   assertFails,
   assertSucceeds,
 } from '@firebase/rules-unit-testing'
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import { beforeAll, afterAll, beforeEach, describe, it } from 'vitest'
 
 let testEnv
@@ -13,6 +13,7 @@ const ADMIN_UID = 'adminUid'
 const REALTOR_UID = 'realtorUid'
 const OTHER_UID = 'otherUid'
 const NO_ROLE_UID = 'noRoleUid'
+const REVOKED_UID = 'revokedUid'
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
@@ -35,6 +36,8 @@ beforeEach(async () => {
     const db = ctx.firestore()
     await setDoc(doc(db, 'admins', ADMIN_UID), {})
     await setDoc(doc(db, 'realtors', REALTOR_UID), { email: 'r@example.com' })
+    await setDoc(doc(db, 'realtors', REVOKED_UID), { email: 'gone@example.com', active: false })
+    await setDoc(doc(db, 'accessRequests', 'pending@example.com'), { name: 'Pending', email: 'pending@example.com' })
     await setDoc(doc(db, 'content', 'site'), { heroTitle: 'Welcome' })
     await setDoc(doc(db, 'gallery', 'photo1'), { storagePath: 'gallery/1.jpg', order: 1 })
     await setDoc(doc(db, 'documents', 'realtorDoc'), {
@@ -153,5 +156,63 @@ describe('realtors collection', () => {
   })
   it('admin can write', async () => {
     await assertSucceeds(setDoc(doc(ctxDb(ADMIN_UID), 'realtors', 'newRealtor'), { email: 'new@example.com' }))
+  })
+})
+
+describe('revoked realtors', () => {
+  it('cannot read a realtor-visibility document', async () => {
+    await assertFails(getDoc(doc(ctxDb(REVOKED_UID), 'documents', 'realtorDoc')))
+  })
+  it('cannot run the scoped realtor-visibility query', async () => {
+    await assertFails(getDocs(query(
+      collection(ctxDb(REVOKED_UID), 'documents'), where('visibility', '==', 'realtor'))))
+  })
+  it('can still read their own realtor doc (so the app can explain why)', async () => {
+    await assertSucceeds(getDoc(doc(ctxDb(REVOKED_UID), 'realtors', REVOKED_UID)))
+  })
+})
+
+describe('accessRequests', () => {
+  const EMAIL = 'jane@example.com'
+  const valid = () => ({ name: 'Jane Doe', email: EMAIL, requestedAt: serverTimestamp() })
+
+  it('anonymous can create a valid request keyed by its email', async () => {
+    await assertSucceeds(setDoc(doc(ctxDb(null), 'accessRequests', EMAIL), valid()))
+  })
+  it('rejects a request whose id is not its email', async () => {
+    await assertFails(setDoc(doc(ctxDb(null), 'accessRequests', 'other@example.com'), valid()))
+  })
+  it('rejects an uppercase email', async () => {
+    const email = 'Jane@Example.com'
+    await assertFails(setDoc(doc(ctxDb(null), 'accessRequests', email), { ...valid(), email }))
+  })
+  it('rejects extra fields', async () => {
+    await assertFails(setDoc(doc(ctxDb(null), 'accessRequests', EMAIL), { ...valid(), role: 'admin' }))
+  })
+  it('rejects an empty or overlong name', async () => {
+    await assertFails(setDoc(doc(ctxDb(null), 'accessRequests', EMAIL), { ...valid(), name: '' }))
+    await assertFails(setDoc(doc(ctxDb(null), 'accessRequests', EMAIL), { ...valid(), name: 'x'.repeat(101) }))
+  })
+  it('rejects a malformed email', async () => {
+    const email = 'not-an-email'
+    await assertFails(setDoc(doc(ctxDb(null), 'accessRequests', email), { ...valid(), email }))
+  })
+  it('rejects a client-chosen timestamp', async () => {
+    await assertFails(setDoc(doc(ctxDb(null), 'accessRequests', EMAIL), { ...valid(), requestedAt: new Date(0) }))
+  })
+  it('cannot overwrite an existing request', async () => {
+    await assertFails(setDoc(doc(ctxDb(null), 'accessRequests', 'pending@example.com'),
+      { name: 'Someone else', email: 'pending@example.com', requestedAt: serverTimestamp() }))
+  })
+  it('anonymous and realtors cannot read or list requests', async () => {
+    await assertFails(getDoc(doc(ctxDb(null), 'accessRequests', 'pending@example.com')))
+    await assertFails(getDocs(collection(ctxDb(REALTOR_UID), 'accessRequests')))
+  })
+  it('admin can list and delete requests', async () => {
+    await assertSucceeds(getDocs(collection(ctxDb(ADMIN_UID), 'accessRequests')))
+    await assertSucceeds(deleteDoc(doc(ctxDb(ADMIN_UID), 'accessRequests', 'pending@example.com')))
+  })
+  it('a realtor cannot delete requests', async () => {
+    await assertFails(deleteDoc(doc(ctxDb(REALTOR_UID), 'accessRequests', 'pending@example.com')))
   })
 })

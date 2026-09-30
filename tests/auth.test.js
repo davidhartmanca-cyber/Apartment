@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveRole } from '../src/auth.js'
+import { resolveRole, isActiveRealtorDoc } from '../src/auth.js'
 
 describe('resolveRole', () => {
   it('returns admin when an admin doc exists, regardless of realtor doc', () => {
@@ -11,5 +11,17 @@ describe('resolveRole', () => {
   })
   it('returns null when neither doc exists', () => {
     expect(resolveRole(false, false)).toBe(null)
+  })
+})
+
+describe('isActiveRealtorDoc', () => {
+  it('is false when there is no realtor doc', () => {
+    expect(isActiveRealtorDoc(undefined)).toBe(false)
+  })
+  it('treats a doc without an active field as active (pre-revocation docs)', () => {
+    expect(isActiveRealtorDoc({ email: 'r@example.com' })).toBe(true)
+  })
+  it('is false for a revoked realtor', () => {
+    expect(isActiveRealtorDoc({ email: 'r@example.com', active: false })).toBe(false)
   })
 })

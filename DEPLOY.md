@@ -30,6 +30,19 @@
 
 ## Adding a realtor
 
+Realtors request access on the public **Realtors** tab (name + email). An admin
+approves them on **Realtor Access**: **Grant** creates their login with a
+generated 10-character password, shown once with copy buttons for the password
+and a ready-made email. Nothing sends email automatically; paste it into your
+own email to the realtor.
+
+**Revoke** sets `active: false` on their `realtors/{uid}` doc, which the rules
+treat as no access. Their Auth login remains (the browser SDK can't delete other
+users), so **Restore access** reactivates the doc and sends a Firebase
+password-reset email instead of generating a new password.
+
+To add a realtor without a request, the script still works:
+
 ```bash
 node scripts/create-realtor.mjs realtor@example.com "Realtor Name"
 ```
@@ -37,6 +50,10 @@ node scripts/create-realtor.mjs realtor@example.com "Realtor Name"
 This requires `scripts/serviceAccountKey.json` (Project Settings -> Service Accounts -> Generate new private key), which is gitignored and must never be committed.
 
 The script only prints a password-reset link to the console — it does not email the realtor. Copy that link and send it to them yourself (email, text, etc.).
+
+## Deploying rules
+
+Deploy Firestore and Storage rules **before** pushing frontend changes that depend on them. `storage.rules` calls `firestore.get()`/`exists()`, which needs the Storage service agent to hold `roles/firebaserules.firestoreServiceAgent`. `firebase deploy` only grants it when run interactively and when `storage.rules` has changed; from a script or an AI-agent shell, pass `--interactive --force`.
 
 ## Smoke test before calling a deploy done
 

@@ -12,6 +12,7 @@ let testEnv
 
 const ADMIN_UID = 'adminUid'
 const REALTOR_UID = 'realtorUid'
+const REVOKED_UID = 'revokedUid'
 const FILE_BYTES = new Uint8Array([1, 2, 3])
 
 beforeAll(async () => {
@@ -40,6 +41,7 @@ beforeEach(async () => {
     const db = ctx.firestore()
     await setDoc(doc(db, 'admins', ADMIN_UID), {})
     await setDoc(doc(db, 'realtors', REALTOR_UID), { email: 'r@example.com' })
+    await setDoc(doc(db, 'realtors', REVOKED_UID), { email: 'gone@example.com', active: false })
   })
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const storage = ctx.storage()
@@ -74,6 +76,9 @@ describe('documents/realtor storage', () => {
   })
   it('anonymous cannot read', async () => {
     await assertFails(getBytes(ref(ctxStorage(null), 'documents/realtor/seed.pdf')))
+  })
+  it('revoked realtor cannot read', async () => {
+    await assertFails(getBytes(ref(ctxStorage(REVOKED_UID), 'documents/realtor/seed.pdf')))
   })
   it('realtor cannot write', async () => {
     await assertFails(uploadBytes(ref(ctxStorage(REALTOR_UID), 'documents/realtor/new.pdf'), FILE_BYTES))
