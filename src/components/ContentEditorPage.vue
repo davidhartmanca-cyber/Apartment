@@ -28,6 +28,12 @@
         </span>
       </li>
     </ul>
+    <div v-if="pendingStarters.length" class="card form-block starter-photos">
+      <p>Add {{ pendingStarters.length }} stock photo{{ pendingStarters.length === 1 ? '' : 's' }} to the gallery. You can recaption, reorder or delete them afterwards.</p>
+      <button type="button" class="btn btn-outline" @click="addStarterPhotos" :disabled="addingStarters">
+        {{ addingStarters ? 'Adding…' : 'Add starter photos' }}
+      </button>
+    </div>
     <form class="card form-block add-photo-form" @submit.prevent="addPhoto">
       <input type="file" accept="image/*" @change="onFileChange" required />
       <input v-model="newCaption" placeholder="Caption" />
@@ -37,12 +43,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import {
   doc, getDoc, setDoc, collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc,
 } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, deleteObject } from 'firebase/storage'
 import { db, storage } from '../firebase.js'
+import { pendingStarterPhotos } from '../starterPhotos.js'
 
 const form = reactive({
   heroTitle: '',
@@ -60,6 +67,8 @@ const newFile = ref(null)
 const newCaption = ref('')
 const uploading = ref(false)
 const photoBusy = ref(false)
+const addingStarters = ref(false)
+const pendingStarters = computed(() => pendingStarterPhotos(photos.value))
 
 async function withBusy(busyRef, fn) {
   busyRef.value = true
@@ -116,6 +125,31 @@ async function addPhoto() {
     newFile.value = null
     newCaption.value = ''
     await loadPhotos()
+  })
+}
+
+// Copies each stock photo into Storage so it becomes a normal gallery entry.
+// Added one at a time; if one fails, those already added stay and the button
+// offers only the rest.
+async function addStarterPhotos() {
+  await withBusy(addingStarters, async () => {
+    try {
+      for (const starter of pendingStarters.value) {
+        const response = await fetch(starter.url)
+        if (!response.ok) throw new Error(`Fetching ${starter.url} failed: ${response.status}`)
+        const blob = await response.blob()
+        const path = `gallery/${Date.now()}-starter-${starter.starterId}.jpg`
+        await uploadBytes(storageRef(storage, path), blob, { contentType: blob.type || 'image/jpeg' })
+        await addDoc(collection(db, 'gallery'), {
+          storagePath: path,
+          caption: starter.caption,
+          order: starter.order,
+          starterId: starter.starterId,
+        })
+      }
+    } finally {
+      await loadPhotos()
+    }
   })
 }
 
@@ -186,6 +220,10 @@ async function swapOrder(i, j) {
   display: flex;
   gap: 0.4rem;
   flex-shrink: 0;
+}
+
+.starter-photos p {
+  margin-top: 0;
 }
 
 .add-photo-form {
